@@ -399,7 +399,7 @@ public class GestorDescargas {
 ```
 ### Nivel 3
 #### Clase Instalador
-Como clase `Instalador`, implemento la interfaz `Runnable` para simular un proceso de instalación en un hilo secundario que depende de otros hilos: en mi método `run()`, utilizo `.join()` para bloquear mi ejecución y esperar activamente a que finalicen las descargas de dos archivos específicos (`descargaMeditacion` y `descargaMantras`); una vez completadas ambas, muestro un mensaje por consola, simulo el tiempo del proceso de instalación haciendo una pausa de 1000 milisegundos con `Thread.sleep(1000)` y concluyo informando que la instalación ha terminado, todo ello protegido por un bloque `try-catch` para gestionar posibles interrupciones.
+Implemento la interfaz `Runnable` para simular un proceso de instalación en un hilo secundario que depende de otros hilos: en mi método `run()`, utilizo `.join()` para bloquear mi ejecución y esperar activamente a que finalicen las descargas de dos archivos específicos (`descargaMeditacion` y `descargaMantras`); una vez completadas ambas, muestro un mensaje por consola, simulo el tiempo del proceso de instalación haciendo una pausa de 1000 milisegundos con `Thread.sleep(1000)` y concluyo informando que la instalación ha terminado, todo ello protegido por un bloque `try-catch` para gestionar posibles interrupciones.
 ![Instalador.png](Fotos/Instalador.png)
 
 ```java
