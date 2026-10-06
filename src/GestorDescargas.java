@@ -76,11 +76,40 @@ public class GestorDescargas {
         Thread hiloMonitor = new Thread(monitor, "Hilo-Monitor");
         hiloMonitor.start();
 
+        //Buscar las referencias específicas para el Instalador
+        Descarga descargaMeditacion = null;
+        Descarga descargaMantras = null;
+        for (Descarga descarga : descargas) {
+            if (descarga.getNombreArchivo().contains("meditacion")) {
+                descargaMeditacion = descarga;
+            } else if (descarga.getNombreArchivo().contains("mantras")) {
+                descargaMantras = descarga;
+            }
+        }
+
+        // Crear e iniciar el hilo Instalador
+        Instalador instalador = new Instalador(descargaMeditacion, descargaMantras);
+        Thread hiloInstalador = new Thread(instalador, "Hilo-Instalador");
+        hiloInstalador.start();
+
+        //Espera por meditacion.mp4 3 segundos
+        if (descargaMeditacion != null) {
+            try {
+                descargaMeditacion.join(3000);
+                if (descargaMeditacion.isAlive()) {
+                    System.out.println("[Main] meditacion.mp4 sigue en segundo plano");
+                }
+            } catch (InterruptedException e) {
+                System.err.println("Error en la espera de meditación: " + e.getMessage());
+            }
+        }
+
         //Esperar a que terminen todos los hilos join
         for (Descarga descarga : descargas) {
             try {
                 descarga.join();
                 hiloMonitor.join();
+                hiloInstalador.join();
             } catch (InterruptedException e) {
                 System.err.println("El hilo principal fue interrumpido: " + e.getMessage());
             }
