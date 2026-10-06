@@ -16,9 +16,11 @@ public class Monitor implements Runnable {
                 // si descarga es diferente anulo y además el proceso está vivo suma 1 a activas
                 if (descarga != null && descarga.isAlive()) {
                     activas++;
+                }else{
+                    activas = 0;
                 }
             }
-            //si activas es mayor a 0  imprime
+            //si activas es mayor a 0 imprime
             if (activas > 0) {
                 System.out.println("[MONITOR] Descargas en curso: " + activas);
             } else {
