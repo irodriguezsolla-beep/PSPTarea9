@@ -115,6 +115,7 @@ public class GestorDescargas {
 
 <u>Preguntas a la IA en el nivel 1:</u>
 ¿Cómo puedo calcular el tiempo que tarda en ejecutarse un trozo de código en Java?
+
 Para medir la duración de un bloque de código en Java se utiliza el método estático System.currentTimeMillis(), el cual devuelve el tiempo actual en milisegundos. El procedimiento consiste en guardar el valor inicial en una variable de tipo long justo antes de empezar la tarea que se quiere evaluar, capturar nuevamente el tiempo de la misma forma al finalizar el proceso, y restar ambos valores (tiempoFinal - tiempoInicial) para obtener la duración exacta transcurrida en milisegundos.
 
 
@@ -234,6 +235,165 @@ Tiempo estimado si fuera una detrás de otra (secuencial): 13200 ms
 Process finished with exit code 0
 ```
 
+### Nivel 2
+#### Clase Monitor
+
+En la clase `Monitor`, implementé la interfaz `Runnable` para crear un hilo secundario que supervisa en tiempo real el estado del proceso. Dentro del método `run()`, utilicé un bucle `while` controlado por una variable booleana para evaluar periódicamente un array de objetos `Descarga`, usando el método `isAlive()` para contar cuántos hilos siguen ejecutándose de forma activa. Si detecto descargas en curso, el monitor imprime por consola la cantidad de archivos pendientes y realiza una pausa de 500 ms con `Thread.sleep()`; cuando compruebo que la cuenta de descargas activas llega a cero o si el hilo sufre una interrupción, cambio la bandera a `false` para dar por finalizada la supervisión.
+![Monitor.png](Fotos/Monitor.png)
+
+```java
+public class Monitor implements Runnable {
+    private Descarga[] descargas;
+
+    // Recibe el array de descargas
+    public Monitor(Descarga[] descargas) {
+        this.descargas = descargas;
+    }
+    //run del hilo Monitor
+    public void run() {
+        boolean hayActivas = true;
+        // bucle que hayActivas seguirá activo hasta que hayActivas sea false
+        while (hayActivas) {
+            int activas = 0;
+            // Contamos cuántas descargas siguen ejecutándose mediante un bucle que recorre la lista de descargas
+            for (Descarga descarga : descargas) {
+                // si descarga es diferente anulo y además el proceso está vivo suma 1 a activas
+                if (descarga != null && descarga.isAlive()) {
+                    activas++;
+                }
+            }
+            //si activas es mayor a 0  imprime
+            if (activas > 0) {
+                System.out.println("[MONITOR] Descargas en curso: " + activas);
+            } else {
+                // Si no queda ninguna activa, salimos del bucle
+                System.out.println("[Monitor] No queda ninguna descarga en curso");
+                hayActivas = false;
+            }
+
+            try {
+                // Pausa de 500 ms entre cada revisión
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                // Si se interrumpe el monitor, se interrumpe el ciclo
+                break;
+            }
+
+
+        }
+
+    }
+}
+```
+#### Clase GestorDescargas Modificación
+
+En el programa principal `GestorDescargas`, añadí un `Scanner` dentro de un bucle `while` para solicitar interactivamente al usuario la cantidad y los nombres de los archivos a descargar, asignando cuatro nombres por defecto en caso de dejar la entrada en blanco. Tras inicializar y arrancar el array de objetos `Descarga`, integré la clase `Monitor` envolviéndola en un hilo secundario e iniciándolo inmediatamente después de las descargas para supervisar en paralelo su progreso. Además, incluí una llamada a `hiloMonitor.join()` dentro del bloque de espera para asegurar que el hilo principal no imprima la comparativa final de tiempos hasta que tanto el monitor como todas las descargas hayan concluido por completo.
+![GestorDescargas2.png](Fotos/GestorDescargas2.png)
+
+```java
+import java.util.Scanner;
+
+public class GestorDescargas {
+
+    public static void main(String[] args) {
+        //Escaner para leer la entrada por consola
+        Scanner scanner = new Scanner(System.in);
+        // Lista vacía de los nombres de de los archivos
+        String[] nombresArchivos = null;
+
+        //Bucle while que se ejecutara hasta que la lista de nombres de archivos sea diferente a null
+        while(nombresArchivos == null){
+            System.out.println("¿Cuántos archivos quieres descargar? (deja en blanco o pulsa Enter para descargar los 4 por defecto):");
+            //Lee toda la línea de texto que el usuario escribe y quita los espacios del inicio y el final.
+            String Cantidad = scanner.nextLine().trim();
+
+            //Si la cadena Cantidad no está vacía entonces es .
+            //isEmpty() sirve para comprobar si una cadena de texto, colección o estructura de datos está vacía
+            if (!Cantidad.isEmpty()){
+                try{
+                    //Convierte el texto ingresado a un número entero
+                    int cantidad = Integer.parseInt(Cantidad);
+
+                    // Verifica que el número ingresado sea mayor que cero
+                    if(cantidad > 0){
+                        // Inicializa el array de nombres con el tamaño especificado por el usuario
+                        nombresArchivos = new String[cantidad];
+                        // Pide el nombre de cada archivo uno por uno en un bucle
+                        for (int i = 0; i < cantidad; i++) {
+                            System.out.println("Introduce el nombre del archivo " + (i + 1) + ":");
+                            // Lee el nombre ingresado y elimina los espacios en blanco sobrantes
+                            nombresArchivos[i] = scanner.nextLine().trim();
+                        }
+                    }else{
+                        // Muestra un mensaje si el usuario introdujo un número menor o igual a cero
+                        System.out.println("Error: El número tiene que ser mayor a 0.");
+                    }
+                }catch(NumberFormatException error){
+                    // Captura la excepción si el texto ingresado no se puede convertir a un número entero.
+                    System.out.println("Error: Por favor, introduce un número entero válido.");
+                }
+            }else{
+                //Nombres de los archivos a descargar predefinidos
+                nombresArchivos = new String[]{
+                        "cuarzos.png",
+                        "meditacion.mp4",
+                        "horoscopo.pdf",
+                        "mantras.mp3"
+                };
+
+            }
+
+        }
 
 
 
+
+        //Contar la cantidad de archivos que se van a descargar
+        int totalDescargas = nombresArchivos.length;
+        //Creación de la lista de objetos descarga con los espacios suficientes de de nombres de archivos
+        Descarga[] descargas = new Descarga[totalDescargas];
+        //Creacion de los objetos dentro de la lista
+        for (int i = 0; i < totalDescargas; i++) {
+            descargas[i] = new Descarga(nombresArchivos[i]);
+        }
+
+        // Medición de tiempo real con reloj del sistema
+        long tiempoInicioReal = System.currentTimeMillis();
+
+        //Arrancar todos los hilos
+        for (Descarga descarga : descargas) {
+            descarga.start();
+        }
+        //Crear e iniciar el monitor después de arrancar las descargas así encuentra hilos vivos
+        Monitor monitor = new Monitor(descargas);
+        Thread hiloMonitor = new Thread(monitor, "Hilo-Monitor");
+        hiloMonitor.start();
+
+        //Esperar a que terminen todos los hilos join
+        for (Descarga descarga : descargas) {
+            try {
+                descarga.join();
+                hiloMonitor.join();
+            } catch (InterruptedException e) {
+                System.err.println("El hilo principal fue interrumpido: " + e.getMessage());
+            }
+        }
+
+
+
+        long tiempoFinReal = System.currentTimeMillis();
+        long tiempoRealTotal = tiempoFinReal - tiempoInicioReal;
+
+        //Calcular la suma de los tiempos de cada descarga (secuencial)
+        int tiempoSumaSecuencial = 0;
+        for (Descarga descarga : descargas) {
+            tiempoSumaSecuencial += descarga.getTiempoTotal();
+        }
+
+        //Imprimir resultados finales
+        System.out.println("Todas las descargas han terminado.");
+        System.out.println("Tiempo real transcurrido (en paralelo): " + tiempoRealTotal + " ms");
+        System.out.println("Tiempo estimado si fuera una detrás de otra (secuencial): " + tiempoSumaSecuencial + " ms");
+    }
+}
+```

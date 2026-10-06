@@ -71,15 +71,22 @@ public class GestorDescargas {
         for (Descarga descarga : descargas) {
             descarga.start();
         }
+        //Crear e iniciar el monitor después de arrancar las descargas así encuentra hilos vivos
+        Monitor monitor = new Monitor(descargas);
+        Thread hiloMonitor = new Thread(monitor, "Hilo-Monitor");
+        hiloMonitor.start();
 
-        //Esperar a que terminen todos los hilos (join)
+        //Esperar a que terminen todos los hilos join
         for (Descarga descarga : descargas) {
             try {
                 descarga.join();
+                hiloMonitor.join();
             } catch (InterruptedException e) {
                 System.err.println("El hilo principal fue interrumpido: " + e.getMessage());
             }
         }
+
+
 
         long tiempoFinReal = System.currentTimeMillis();
         long tiempoRealTotal = tiempoFinReal - tiempoInicioReal;
